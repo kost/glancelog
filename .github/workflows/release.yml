@@ -1,0 +1,356 @@
+name: Release Builds
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: glancelog ${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          body: |
+            # glancelog ${{ steps.get_version.outputs.version }}
+
+            Log analysis tool for systems administrators.
+
+            ## Downloads
+
+            ### Linux (Static Binaries - No Dependencies)
+            - **Linux x64**: `glancelog-linux-x64` - Fully static musl binary
+            - **Linux ARM64**: `glancelog-linux-arm64` - Fully static musl binary
+
+            ### macOS
+            - **macOS x64**: `glancelog-macos-x64` - Intel Macs
+            - **macOS ARM64**: `glancelog-macos-arm64` - Apple Silicon (M1/M2/M3)
+
+            ### Windows
+            - **Windows x64**: `glancelog-windows-x64.exe` - Static binary
+            - **Windows x86 (32-bit)**: `glancelog-windows-x86.exe` - Static binary
+            - **Windows ARM64**: `glancelog-windows-arm64.exe` - Static binary
+
+            ### BSD
+            - **FreeBSD x64**: `glancelog-freebsd-x64` - Static binary
+            - **NetBSD x64**: `glancelog-netbsd-x64` - Static binary
+
+            ## Installation
+
+            ### Linux/macOS/BSD
+            ```bash
+            # Download and make executable
+            chmod +x glancelog-*
+            sudo mv glancelog-* /usr/local/bin/glancelog
+
+            # Verify
+            glancelog --version
+            ```
+
+            ### Windows
+            ```powershell
+            # Run directly or add to PATH
+            .\glancelog-windows-x64.exe --version
+            ```
+
+            ## Changes
+
+            See [CHANGELOG.md](https://github.com/kost/glancelog/blob/main/CHANGELOG.md) for details.
+
+  build-linux:
+    name: Build Linux
+    needs: create-release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu
+          fi
+
+      - name: Set up cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.target }}-
+            ${{ runner.os }}-cargo-
+
+      - name: Build static binary
+        run: |
+          if [ "${{ matrix.target }}" = "x86_64-unknown-linux-musl" ]; then
+            make dist-linux-x64
+          else
+            make dist-linux-arm64
+          fi
+        env:
+          RUSTFLAGS: "-C target-feature=+crt-static"
+
+      - name: Determine binary name
+        id: binary_name
+        run: |
+          if [ "${{ matrix.target }}" = "x86_64-unknown-linux-musl" ]; then
+            echo "name=glancelog-linux-x64" >> $GITHUB_OUTPUT
+          else
+            echo "name=glancelog-linux-arm64" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify static binary
+        run: |
+          file dist/${{ steps.binary_name.outputs.name }}
+          ldd dist/${{ steps.binary_name.outputs.name }} 2>&1 | grep -q "statically linked" || echo "Warning: Binary may not be fully static"
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./dist/${{ steps.binary_name.outputs.name }}
+          asset_name: ${{ steps.binary_name.outputs.name }}
+          asset_content_type: application/octet-stream
+
+  build-macos:
+    name: Build macOS
+    needs: create-release
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Set up cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.target }}-
+            ${{ runner.os }}-cargo-
+
+      - name: Build binary
+        run: |
+          if [ "${{ matrix.target }}" = "x86_64-apple-darwin" ]; then
+            make dist-macos-x64
+          else
+            make dist-macos-arm64
+          fi
+
+      - name: Determine binary name
+        id: binary_name
+        run: |
+          if [ "${{ matrix.target }}" = "x86_64-apple-darwin" ]; then
+            echo "name=glancelog-macos-x64" >> $GITHUB_OUTPUT
+          else
+            echo "name=glancelog-macos-arm64" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./dist/${{ steps.binary_name.outputs.name }}
+          asset_name: ${{ steps.binary_name.outputs.name }}
+          asset_content_type: application/octet-stream
+
+  build-windows:
+    name: Build Windows
+    needs: create-release
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-pc-windows-msvc
+          - i686-pc-windows-msvc
+          - aarch64-pc-windows-msvc
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Set up cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.target }}-
+            ${{ runner.os }}-cargo-
+
+      - name: Build static binary
+        shell: bash
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+          mkdir -p dist
+          if [ "${{ matrix.target }}" = "x86_64-pc-windows-msvc" ]; then
+            cp target/${{ matrix.target }}/release/glancelog.exe dist/glancelog-windows-x64.exe
+          elif [ "${{ matrix.target }}" = "i686-pc-windows-msvc" ]; then
+            cp target/${{ matrix.target }}/release/glancelog.exe dist/glancelog-windows-x86.exe
+          else
+            cp target/${{ matrix.target }}/release/glancelog.exe dist/glancelog-windows-arm64.exe
+          fi
+        env:
+          RUSTFLAGS: "-C target-feature=+crt-static"
+
+      - name: Determine binary name
+        id: binary_name
+        shell: bash
+        run: |
+          if [ "${{ matrix.target }}" = "x86_64-pc-windows-msvc" ]; then
+            echo "name=glancelog-windows-x64.exe" >> $GITHUB_OUTPUT
+          elif [ "${{ matrix.target }}" = "i686-pc-windows-msvc" ]; then
+            echo "name=glancelog-windows-x86.exe" >> $GITHUB_OUTPUT
+          else
+            echo "name=glancelog-windows-arm64.exe" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./dist/${{ steps.binary_name.outputs.name }}
+          asset_name: ${{ steps.binary_name.outputs.name }}
+          asset_content_type: application/octet-stream
+
+  build-freebsd:
+    name: Build FreeBSD
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build on FreeBSD
+        uses: cross-platform-actions/action@v0.25.0
+        env:
+          CARGO_TERM_COLOR: always
+        with:
+          operating_system: freebsd
+          version: '14.0'
+          shell: bash
+          run: |
+            sudo pkg install -y rust
+            cargo build --release
+            mkdir -p dist
+            cp target/release/glancelog dist/glancelog-freebsd-x64
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./dist/glancelog-freebsd-x64
+          asset_name: glancelog-freebsd-x64
+          asset_content_type: application/octet-stream
+
+  build-netbsd:
+    name: Build NetBSD
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build on NetBSD
+        uses: cross-platform-actions/action@v0.25.0
+        env:
+          CARGO_TERM_COLOR: always
+        with:
+          operating_system: netbsd
+          version: '10.0'
+          shell: bash
+          run: |
+            sudo pkgin -y install rust cargo
+            cargo build --release
+            mkdir -p dist
+            cp target/release/glancelog dist/glancelog-netbsd-x64
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./dist/glancelog-netbsd-x64
+          asset_name: glancelog-netbsd-x64
+          asset_content_type: application/octet-stream
