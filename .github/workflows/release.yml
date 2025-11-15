@@ -47,25 +47,6 @@ jobs:
 
             Rapid log analysis
 
-            ## Downloads
-
-            ### Linux (Static Binaries - No Dependencies)
-            - **Linux x64**: `glancelog-linux-x64` - Fully static musl binary
-            - **Linux ARM64**: `glancelog-linux-arm64` - Fully static musl binary
-
-            ### macOS
-            - **macOS x64**: `glancelog-macos-x64` - Intel Macs
-            - **macOS ARM64**: `glancelog-macos-arm64` - Apple Silicon (M1/M2/M3)
-
-            ### Windows
-            - **Windows x64**: `glancelog-windows-x64.exe` - Static binary
-            - **Windows x86 (32-bit)**: `glancelog-windows-x86.exe` - Static binary
-            - **Windows ARM64**: `glancelog-windows-arm64.exe` - Static binary
-
-            ### BSD
-            - **FreeBSD x64**: `glancelog-freebsd-x64` - Static binary
-            - **NetBSD x64**: `glancelog-netbsd-x64` - Static binary
-
             ## Installation
 
             ### Linux/macOS/BSD
