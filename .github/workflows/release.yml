@@ -363,7 +363,7 @@ jobs:
           run: |
             set -e
             echo "Installing Rust and Cargo..."
-            sudo pkgin -y install rust cargo
+            sudo pkgin -y install rust
             echo "Building glancelog..."
             cargo build --release --verbose
             echo "Build complete, creating dist directory..."
