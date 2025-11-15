@@ -45,7 +45,7 @@ jobs:
           body: |
             # glancelog ${{ steps.get_version.outputs.version }}
 
-            Log analysis tool for systems administrators.
+            Rapid log analysis
 
             ## Downloads
 
@@ -83,10 +83,6 @@ jobs:
             # Run directly or add to PATH
             .\glancelog-windows-x64.exe --version
             ```
-
-            ## Changes
-
-            See [CHANGELOG.md](https://github.com/kost/glancelog/blob/main/CHANGELOG.md) for details.
 
   build-linux:
     name: Build Linux
