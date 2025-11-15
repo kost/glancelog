@@ -36,6 +36,10 @@ struct Cli {
     #[arg(long)]
     nofilter: bool,
 
+    /// Custom directory for filter files (overrides default paths and GLANCELOG_FILTERDIR)
+    #[arg(long)]
+    filter_dir: Option<String>,
+
     /// Use wider graph characters
     #[arg(long)]
     wide: bool,
@@ -206,7 +210,8 @@ fn mode_hash(cli: &Cli, log: &CrunchLog) {
     let filter = if cli.nofilter {
         Filter::new()
     } else {
-        Filter::from_file("hash.stopwords").unwrap_or_else(|_| Filter::new())
+        Filter::from_file_with_dir("hash.stopwords", cli.filter_dir.as_deref())
+            .unwrap_or_else(|_| Filter::new())
     };
 
     let mut hash = SuperHash::from_log(log, HashMode::Hash, filter);
@@ -230,7 +235,8 @@ fn mode_wordcount(cli: &Cli, log: &CrunchLog) {
     let filter = if cli.nofilter {
         Filter::new()
     } else {
-        Filter::from_file("words.stopwords").unwrap_or_else(|_| Filter::new())
+        Filter::from_file_with_dir("words.stopwords", cli.filter_dir.as_deref())
+            .unwrap_or_else(|_| Filter::new())
     };
 
     let mut hash = SuperHash::from_log(log, HashMode::WordCount, filter);
@@ -242,7 +248,8 @@ fn mode_daemon(cli: &Cli, log: &CrunchLog) {
     let filter = if cli.nofilter {
         Filter::new()
     } else {
-        Filter::from_file("daemon.stopwords").unwrap_or_else(|_| Filter::new())
+        Filter::from_file_with_dir("daemon.stopwords", cli.filter_dir.as_deref())
+            .unwrap_or_else(|_| Filter::new())
     };
 
     let mut hash = SuperHash::from_log(log, HashMode::Daemon, filter);
@@ -254,7 +261,8 @@ fn mode_host(cli: &Cli, log: &CrunchLog) {
     let filter = if cli.nofilter {
         Filter::new()
     } else {
-        Filter::from_file("host.stopwords").unwrap_or_else(|_| Filter::new())
+        Filter::from_file_with_dir("host.stopwords", cli.filter_dir.as_deref())
+            .unwrap_or_else(|_| Filter::new())
     };
 
     let mut hash = SuperHash::from_log(log, HashMode::Host, filter);

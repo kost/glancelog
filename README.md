@@ -115,6 +115,7 @@ glancelog --sgraph --from "2025-11-14" --to "2025-11-14" /var/log/messages
 - `--to <DATETIME>`: Filter logs to this datetime (formats: "YYYY-MM-DD HH:MM:SS", "YYYY-MM-DD HH:MM", or "YYYY-MM-DD")
 - `--filter`: Use filter files during processing (default for most modes)
 - `--nofilter`: Don't use filter files
+- `--filter-dir <DIR>`: Custom directory for filter files (overrides `GLANCELOG_FILTERDIR` and default paths)
 - `--wide`: Use wider graph characters for better visibility
 - `--tick <CHAR>`: Change the tick character used in graphs (default: `#`)
 - `-v`: Verbose output (shows detected log format and entry count)
@@ -135,17 +136,78 @@ The philosophy is that:
 
 ## Filter Files
 
-Filter files contain regular expressions (one per line) that define what should be replaced with `#`. Default filters are located in:
-- `./filters/`
-- `/var/lib/glancelog/filters/`
-- `/usr/local/glancelog/var/lib/filters/`
-- `/opt/glancelog/var/lib/filters/`
+Filter files contain regular expressions (one per line) that define what should be replaced with `#`.
 
-Standard filter files:
+### Filter Search Paths
+
+glancelog searches for filter files in the following locations (in priority order):
+
+1. **Custom directory** (via `--filter-dir` option) - highest priority
+2. **Environment variable** (`GLANCELOG_FILTERDIR`)
+3. **User home directory**: `~/.glancelog/filters/` (cross-platform)
+4. **Current directory**: `./filters/`
+5. **System directories** (Unix/Linux only):
+   - `/var/lib/glancelog/filters/`
+   - `/usr/local/glancelog/var/lib/filters/`
+   - `/opt/glancelog/var/lib/filters/`
+
+### Cross-Platform Home Directory Paths
+
+The home directory filter location varies by operating system:
+- **Linux**: `/home/username/.glancelog/filters/`
+- **macOS**: `/Users/username/.glancelog/filters/`
+- **BSD**: `/home/username/.glancelog/filters/`
+- **Windows**: `C:\Users\username\.glancelog\filters\`
+
+### Standard Filter Files
+
 - `hash.stopwords`: Used in hash mode
 - `words.stopwords`: Used in wordcount mode
 - `daemon.stopwords`: Used in daemon mode
 - `host.stopwords`: Used in host mode
+
+### Custom Filter Directory
+
+You can specify a custom filter directory using:
+
+**Command-line option:**
+```bash
+# Use custom filter directory
+glancelog --hash --filter-dir /path/to/custom/filters /var/log/messages
+
+# Works with all modes
+glancelog --daemon --filter-dir ~/my-filters /var/log/messages
+```
+
+**Environment variable:**
+```bash
+# Set for current session
+export GLANCELOG_FILTERDIR=/opt/my-filters
+glancelog --hash /var/log/messages
+
+# Or per-command
+GLANCELOG_FILTERDIR=/tmp/filters glancelog --wordcount /var/log/messages
+```
+
+**User home directory (recommended for personal filters):**
+```bash
+# Create your personal filter directory
+mkdir -p ~/.glancelog/filters
+
+# Add custom regex patterns
+echo '\d+\.\d+\.\d+\.\d+' > ~/.glancelog/filters/hash.stopwords  # Filter IP addresses
+echo '(?i)(error|warning)' > ~/.glancelog/filters/hash.stopwords # Filter error/warning words
+
+# Use automatically (no flags needed)
+glancelog --hash /var/log/messages
+```
+
+**Priority Example:**
+```bash
+# CLI --filter-dir overrides environment variable and home directory
+GLANCELOG_FILTERDIR=~/filters glancelog --hash --filter-dir /tmp/filters /var/log/messages
+# Uses /tmp/filters (CLI has highest priority)
+```
 
 ## Examples
 

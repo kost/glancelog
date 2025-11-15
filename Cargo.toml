@@ -18,3 +18,4 @@ anyhow = "1.0"
 rand = "0.8"
 evtx = { version = "0.8", default-features = false }
 serde_json = "1.0"
+dirs = "5.0"

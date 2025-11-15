@@ -16,12 +16,34 @@ impl Filter {
     }
 
     pub fn from_file(filename: &str) -> Result<Self> {
-        let paths = vec![
+        Self::from_file_with_dir(filename, None)
+    }
+
+    pub fn from_file_with_dir(filename: &str, custom_dir: Option<&str>) -> Result<Self> {
+        let mut paths = Vec::new();
+
+        // Priority 1: Custom directory from parameter (highest priority)
+        if let Some(dir) = custom_dir {
+            paths.push(PathBuf::from(dir).join(filename));
+        }
+
+        // Priority 2: Environment variable GLANCELOG_FILTERDIR
+        if let Ok(env_dir) = std::env::var("GLANCELOG_FILTERDIR") {
+            paths.push(PathBuf::from(env_dir).join(filename));
+        }
+
+        // Priority 3: User home directory ~/.glancelog/filters
+        if let Some(home_dir) = dirs::home_dir() {
+            paths.push(home_dir.join(".glancelog").join("filters").join(filename));
+        }
+
+        // Priority 4: Default search paths
+        paths.extend(vec![
+            PathBuf::from(format!("./filters/{}", filename)),
             PathBuf::from(format!("/var/lib/glancelog/filters/{}", filename)),
             PathBuf::from(format!("/usr/local/glancelog/var/lib/filters/{}", filename)),
             PathBuf::from(format!("/opt/glancelog/var/lib/filters/{}", filename)),
-            PathBuf::from(format!("./filters/{}", filename)),
-        ];
+        ]);
 
         for path in paths {
             if path.exists() {
