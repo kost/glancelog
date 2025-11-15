@@ -4,7 +4,7 @@ A fast, Rust-based rapid log analysis.
 
 ## Overview
 
-glancelog is a log analysis tool that helps systems administrators understand their logs by reducing complexity and highlighting patterns. It works by "hashing" log entries - replacing variable data (like numbers, IPs, timestamps) with placeholder characters, then counting how often each pattern appears.
+glancelog is a rapid log analysis tool that helps systems administrators and security professionals understand their logs by reducing complexity and highlighting patterns. It works by "hashing" log entries - replacing variable data (like numbers, IPs, timestamps) with placeholder characters, then counting how often each pattern appears.
 
 ## Features
 
