@@ -21,10 +21,6 @@
 # Note: Some targets may fail if cross-compilation toolchains are not installed.
 #       The build will continue for other targets.
 
-# Version (update this for releases)
-
-VERSION ?= 1.0.3
-
 # Directories
 DIST_DIR = dist
 TARGET_DIR = target

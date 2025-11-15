@@ -6,7 +6,7 @@ use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 #[derive(Parser)]
 #[command(name = "glancelog")]
 #[command(author = "glancelog contributors")]
-#[command(version = "1.0.3")]
+#[command(version = env!("CARGO_PKG_VERSION"))]
 #[command(about = "Log analysis tool for systems administrators", long_about = None)]
 struct Cli {
     /// Input file (or use stdin if not provided)
