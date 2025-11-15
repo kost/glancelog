@@ -840,4 +840,4 @@ MIT
 
 ## Credits
 
-Inspired by the original Python-based log analysis concepts. Reimplemented in Rust for improved performance and modern tooling.
+Inspired by the [petit](https://crunchtools.com/software/petit/) - original Python-based log analysis concepts.
