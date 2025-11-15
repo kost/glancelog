@@ -106,12 +106,14 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      - name: Install musl tools
+      - name: Install cross-compilation tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools
-          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
-            sudo apt-get install -y gcc-aarch64-linux-gnu
+          if [ "${{ matrix.target }}" = "x86_64-unknown-linux-musl" ]; then
+            sudo apt-get update
+            sudo apt-get install -y musl-tools
+          else
+            # Install cross for ARM64 musl cross-compilation
+            cargo install cross --git https://github.com/cross-rs/cross
           fi
 
       - name: Set up cargo cache
@@ -134,6 +136,9 @@ jobs:
             make dist-linux-x64
           else
             make dist-linux-arm64
+            cross build --release --target ${{ matrix.target }}
+            mkdir -p dist
+            cp target/${{ matrix.target }}/release/glancelog dist/glancelog-linux-arm64
           fi
         env:
           RUSTFLAGS: "-C target-feature=+crt-static"
@@ -301,17 +306,34 @@ jobs:
 
       - name: Build on FreeBSD
         uses: cross-platform-actions/action@v0.25.0
+        continue-on-error: false
+        timeout-minutes: 30
         env:
           CARGO_TERM_COLOR: always
         with:
           operating_system: freebsd
           version: '14.0'
           shell: bash
+          sync_files: runner-to-vm
           run: |
+            set -e
+            echo "Installing Rust..."
             sudo pkg install -y rust
-            cargo build --release
+            echo "Building glancelog..."
+            cargo build --release --verbose
+            echo "Build complete, creating dist directory..."
             mkdir -p dist
             cp target/release/glancelog dist/glancelog-freebsd-x64
+            ls -lh dist/glancelog-freebsd-x64
+            echo "Binary ready for upload"
+
+      - name: Verify binary exists
+        run: |
+          if [ ! -f ./dist/glancelog-freebsd-x64 ]; then
+            echo "Error: Binary not found!"
+            exit 1
+          fi
+          echo "Binary found, size: $(du -h ./dist/glancelog-freebsd-x64 | cut -f1)"
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
@@ -333,17 +355,34 @@ jobs:
 
       - name: Build on NetBSD
         uses: cross-platform-actions/action@v0.25.0
+        continue-on-error: false
+        timeout-minutes: 30
         env:
           CARGO_TERM_COLOR: always
         with:
           operating_system: netbsd
           version: '10.0'
           shell: bash
+          sync_files: runner-to-vm
           run: |
+            set -e
+            echo "Installing Rust and Cargo..."
             sudo pkgin -y install rust cargo
-            cargo build --release
+            echo "Building glancelog..."
+            cargo build --release --verbose
+            echo "Build complete, creating dist directory..."
             mkdir -p dist
             cp target/release/glancelog dist/glancelog-netbsd-x64
+            ls -lh dist/glancelog-netbsd-x64
+            echo "Binary ready for upload"
+
+      - name: Verify binary exists
+        run: |
+          if [ ! -f ./dist/glancelog-netbsd-x64 ]; then
+            echo "Error: Binary not found!"
+            exit 1
+          fi
+          echo "Binary found, size: $(du -h ./dist/glancelog-netbsd-x64 | cut -f1)"
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
