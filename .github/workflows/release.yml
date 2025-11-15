@@ -314,7 +314,7 @@ jobs:
           operating_system: freebsd
           version: '14.0'
           shell: bash
-          sync_files: runner-to-vm
+          sync_files: true
           run: |
             set -e
             echo "Installing Rust..."
@@ -363,7 +363,7 @@ jobs:
           operating_system: netbsd
           version: '10.0'
           shell: bash
-          sync_files: runner-to-vm
+          sync_files: true
           run: |
             set -e
             echo "Installing Rust and Cargo..."
