@@ -1,0 +1,10 @@
+[build.env]
+passthrough = ["RUSTFLAGS"]
+
+[target.aarch64-unknown-linux-musl]
+image = "ghcr.io/cross-rs/aarch64-unknown-linux-musl:0.2.4"
+
+[target.aarch64-unknown-linux-musl.env]
+CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER = "aarch64-linux-musl-gcc"
+CC_aarch64_unknown_linux_musl = "aarch64-linux-musl-gcc"
+CXX_aarch64_unknown_linux_musl = "aarch64-linux-musl-g++"
