@@ -16,5 +16,5 @@ regex = "1.10"
 chrono = "0.4"
 anyhow = "1.0"
 rand = "0.8"
-evtx = "0.7"
+evtx = { version = "0.8", default-features = false }
 serde_json = "1.0"
