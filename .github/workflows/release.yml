@@ -109,8 +109,6 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Build static binary
-        env:
-          CROSS_RUN_BUILD_STD: "1"
         run: |
           if [ "${{ matrix.target }}" = "x86_64-unknown-linux-musl" ]; then
             make dist-linux-x64
@@ -122,6 +120,7 @@ jobs:
           fi
         env:
           RUSTFLAGS: "-C target-feature=+crt-static -C link-arg=-static"
+          CROSS_RUN_BUILD_STD: "1"
 
       - name: Determine binary name
         id: binary_name
