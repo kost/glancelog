@@ -370,3 +370,19 @@ jobs:
           asset_path: ./dist/glancelog-netbsd-x64
           asset_name: glancelog-netbsd-x64
           asset_content_type: application/octet-stream
+
+  publish-crate:
+    name: Publish to crates.io
+    needs: [build-linux, build-macos, build-windows, build-freebsd, build-netbsd]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish to crates.io
+        run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        env:
+          CARGO_TERM_COLOR: always
