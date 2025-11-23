@@ -1,8 +1,14 @@
 use regex::Regex;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::fs::{File, create_dir_all};
+use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use anyhow::Result;
+
+// Embedded default filter files
+const EMBEDDED_HASH_STOPWORDS: &str = include_str!("../filters/hash.stopwords");
+const EMBEDDED_WORDS_STOPWORDS: &str = include_str!("../filters/words.stopwords");
+const EMBEDDED_DAEMON_STOPWORDS: &str = include_str!("../filters/daemon.stopwords");
+const EMBEDDED_HOST_STOPWORDS: &str = include_str!("../filters/host.stopwords");
 
 pub struct Filter {
     stopwords: Vec<Regex>,
@@ -51,8 +57,39 @@ impl Filter {
             }
         }
 
-        // Return empty filter if file not found
+        // Priority 5: Use embedded default filters as fallback
+        if let Some(embedded_content) = Self::get_embedded_filter(filename) {
+            return Self::load_from_string(embedded_content);
+        }
+
+        // Return empty filter if no embedded filter exists
         Ok(Self::new())
+    }
+
+    fn get_embedded_filter(filename: &str) -> Option<&'static str> {
+        match filename {
+            "hash.stopwords" => Some(EMBEDDED_HASH_STOPWORDS),
+            "words.stopwords" => Some(EMBEDDED_WORDS_STOPWORDS),
+            "daemon.stopwords" => Some(EMBEDDED_DAEMON_STOPWORDS),
+            "host.stopwords" => Some(EMBEDDED_HOST_STOPWORDS),
+            _ => None,
+        }
+    }
+
+    fn load_from_string(content: &str) -> Result<Self> {
+        let mut stopwords = Vec::new();
+
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if !trimmed.is_empty() {
+                match Regex::new(trimmed) {
+                    Ok(re) => stopwords.push(re),
+                    Err(e) => eprintln!("Warning: Invalid regex '{}': {}", trimmed, e),
+                }
+            }
+        }
+
+        Ok(Self { stopwords })
     }
 
     fn load_from_path(path: &Path) -> Result<Self> {
@@ -86,6 +123,39 @@ impl Filter {
 
     pub fn bleach(&self, input: &str) -> bool {
         self.scrub(input) == "#"
+    }
+
+    /// Export all embedded filters to a directory
+    pub fn export_embedded_filters(target_dir: &Path) -> Result<()> {
+        create_dir_all(target_dir)?;
+
+        let filters = vec![
+            ("hash.stopwords", EMBEDDED_HASH_STOPWORDS),
+            ("words.stopwords", EMBEDDED_WORDS_STOPWORDS),
+            ("daemon.stopwords", EMBEDDED_DAEMON_STOPWORDS),
+            ("host.stopwords", EMBEDDED_HOST_STOPWORDS),
+        ];
+
+        for (filename, content) in filters {
+            let file_path = target_dir.join(filename);
+            let mut file = File::create(&file_path)?;
+            file.write_all(content.as_bytes())?;
+            eprintln!("Exported: {}", file_path.display());
+        }
+
+        Ok(())
+    }
+
+    /// Export embedded filters to user's home directory
+    pub fn export_to_home() -> Result<()> {
+        if let Some(home_dir) = dirs::home_dir() {
+            let target_dir = home_dir.join(".glancelog").join("filters");
+            Self::export_embedded_filters(&target_dir)?;
+            eprintln!("Filters exported to: {}", target_dir.display());
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Could not determine home directory"))
+        }
     }
 }
 

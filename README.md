@@ -138,6 +138,10 @@ The philosophy is that:
 
 Filter files contain regular expressions (one per line) that define what should be replaced with `#`.
 
+### Embedded Default Filters
+
+**glancelog includes embedded default filter files** that are compiled directly into the binary. These filters work automatically as a fallback when no external filter files are found, ensuring the tool works out-of-the-box without requiring separate filter file installation.
+
 ### Filter Search Paths
 
 glancelog searches for filter files in the following locations (in priority order):
@@ -150,6 +154,7 @@ glancelog searches for filter files in the following locations (in priority orde
    - `/var/lib/glancelog/filters/`
    - `/usr/local/glancelog/var/lib/filters/`
    - `/opt/glancelog/var/lib/filters/`
+6. **Embedded defaults** - Built into the binary as a fallback
 
 ### Cross-Platform Home Directory Paths
 
@@ -165,6 +170,31 @@ The home directory filter location varies by operating system:
 - `words.stopwords`: Used in wordcount mode
 - `daemon.stopwords`: Used in daemon mode
 - `host.stopwords`: Used in host mode
+
+### Exporting Embedded Filters
+
+To customize the default filters, you can export the embedded filters to your filesystem:
+
+**Export to home directory (recommended):**
+```bash
+# Export to ~/.glancelog/filters/
+glancelog --export-filters
+
+# All filter files are now available for editing
+ls ~/.glancelog/filters/
+# hash.stopwords  words.stopwords  daemon.stopwords  host.stopwords
+```
+
+**Export to custom directory:**
+```bash
+# Export to a specific directory
+glancelog --export-filters /path/to/custom/filters
+
+# Now you can edit and use them
+glancelog --hash --filter-dir /path/to/custom/filters /var/log/messages
+```
+
+After exporting, you can edit the filter files to add your own regex patterns or remove patterns you don't need. The exported files will take precedence over the embedded defaults based on the filter search priority.
 
 ### Custom Filter Directory
 

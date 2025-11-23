@@ -40,6 +40,10 @@ struct Cli {
     #[arg(long)]
     filter_dir: Option<String>,
 
+    /// Export embedded default filters to a directory (defaults to ~/.glancelog/filters)
+    #[arg(long)]
+    export_filters: Option<Option<String>>,
+
     /// Use wider graph characters
     #[arg(long)]
     wide: bool,
@@ -107,6 +111,23 @@ struct Cli {
 
 fn main() {
     let cli = Cli::parse();
+
+    // Handle filter export if requested
+    if let Some(export_path) = &cli.export_filters {
+        let result = if let Some(path) = export_path {
+            Filter::export_embedded_filters(std::path::Path::new(path))
+        } else {
+            Filter::export_to_home()
+        };
+
+        match result {
+            Ok(()) => std::process::exit(0),
+            Err(e) => {
+                eprintln!("Error exporting filters: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
 
     // Load log
     let log = if let Some(filename) = &cli.file {
