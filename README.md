@@ -116,6 +116,7 @@ glancelog --sgraph --from "2025-11-14" --to "2025-11-14" /var/log/messages
 - `--filter`: Use filter files during processing (default for most modes)
 - `--nofilter`: Don't use filter files
 - `--filter-dir <DIR>`: Custom directory for filter files (overrides `GLANCELOG_FILTERDIR` and default paths)
+- `--export-filters [DIR]`: Export embedded default filters to a directory (defaults to `~/.glancelog/filters`)
 - `--wide`: Use wider graph characters for better visibility
 - `--tick <CHAR>`: Change the tick character used in graphs (default: `#`)
 - `-v`: Verbose output (shows detected log format and entry count)
@@ -609,7 +610,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load logs
     let log = CrunchLog::from_file("/var/log/messages")?;
 
-    // Create filter from stopwords file
+    // Create filter from stopwords file (uses embedded filter as fallback)
     let filter = Filter::from_file("hash.stopwords")
         .unwrap_or_else(|_| Filter::new());
 
