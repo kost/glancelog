@@ -95,6 +95,7 @@ jobs:
 
       - name: Set up cargo cache
         uses: actions/cache@v4
+        continue-on-error: true
         with:
           path: |
             ~/.cargo/bin/
@@ -102,7 +103,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-${{ matrix.target }}-
             ${{ runner.os }}-cargo-
@@ -164,6 +165,7 @@ jobs:
 
       - name: Set up cargo cache
         uses: actions/cache@v4
+        continue-on-error: true
         with:
           path: |
             ~/.cargo/bin/
@@ -171,7 +173,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-${{ matrix.target }}-
             ${{ runner.os }}-cargo-
@@ -224,6 +226,7 @@ jobs:
 
       - name: Set up cargo cache
         uses: actions/cache@v4
+        continue-on-error: true
         with:
           path: |
             ~/.cargo/bin/
@@ -231,7 +234,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-${{ matrix.target }}-
             ${{ runner.os }}-cargo-
