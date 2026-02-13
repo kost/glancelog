@@ -60,6 +60,24 @@ Find qualitatively important words:
 glancelog --wordcount /var/log/messages
 ```
 
+Some Windows examples:
+```bash
+# Print EVTX events as-is
+glancelog --print Security.evtx
+
+# Analyze Windows Security event log
+glancelog --hash Security.evtx
+
+# See which event sources are most active
+glancelog --daemon Application.evtx
+
+# Analyze events by computer/host
+glancelog --host System.evtx
+
+# Find important event patterns
+glancelog --wordcount Security.evtx
+```
+
 ### Graph Commands
 
 Show activity over first 60 seconds:
